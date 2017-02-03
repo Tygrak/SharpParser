@@ -3,12 +3,14 @@
 //using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
+using SharpParser;
 
 namespace ConsoleApplication{
     public class Program{
         public static void Main(string[] args){
-            SharpParser.page idnes = new SharpParser.page("http://gyrosmajales.wz.cz/test.php");
-            Console.WriteLine(idnes.html);
+            page idnes = new SharpParser.page("http://gyrosmajales.wz.cz/test.php");
+            Console.WriteLine(idnes.findSectionByProperty("div", "id", "pes").source);
+            Console.WriteLine(idnes.findSectionByProperty("span", "class", "kocur").source);
         }
     }
 }
@@ -34,9 +36,88 @@ namespace SharpParser{
             }
         }
 
-        public string findById(string tag, string id){
-            int pos = html.IndexOf(tag);
-            return "";
+        public string findTagByProperty(string tagType, string property, string propertyValue){
+            int posCurr = 0;
+            while (true){
+                int posTag = html.IndexOf(tagType, posCurr);
+                if(posTag == -1){
+                    return null;
+                }
+                int posStart = html.LastIndexOf("<", posTag);
+                int posEnd = html.IndexOf(">", posStart);
+                posCurr = posEnd+1;
+                string tag = html.Substring(posStart, posEnd-posStart+1);
+                posStart = tag.IndexOf(property);
+                if(posStart == -1){
+                    continue;
+                }
+                posStart = tag.IndexOf("\"",posStart);
+                posEnd = tag.IndexOf("\"",posStart+1);
+                string content = tag.Substring(posStart+1, posEnd-posStart-1); 
+                if(propertyValue == content){
+                    return tag;
+                }
+            }
+        }
+
+        public int findTagPositionByProperty(string tagType, string property, string propertyValue){
+            //Returns position of the "<" of the tag.
+            int posCurr = 0;
+            while (true){
+                int posTag = html.IndexOf(tagType, posCurr);
+                if(posTag == -1){
+                    return -1;
+                }
+                int posStart = html.LastIndexOf("<", posTag);
+                int posEnd = html.IndexOf(">", posStart);
+                posCurr = posStart;
+                string tag = html.Substring(posStart, posEnd-posStart+1);
+                posStart = tag.IndexOf(property);
+                if(posStart == -1){
+                    continue;
+                }
+                posStart = tag.IndexOf("\"",posStart);
+                posEnd = tag.IndexOf("\"",posStart+1);
+                string content = tag.Substring(posStart+1, posEnd-posStart-1);
+                if(propertyValue == content){
+                    return posCurr;
+                }
+            }
+        }
+
+        public section findSectionByProperty(string tagType, string property, string propertyValue){
+            int posCurr = findTagPositionByProperty(tagType, property, propertyValue);
+            int sectionStart = posCurr;
+            posCurr = html.IndexOf(">", posCurr);
+            int depth = 0;
+            while (true){
+                int posTag = html.IndexOf(tagType, posCurr);
+                if(posTag == -1){
+                    return null;
+                }
+                int posStart = html.LastIndexOf("<", posTag);
+                int posEnd = html.IndexOf(">", posStart);
+                posCurr = posEnd+1;
+                string tag = html.Substring(posStart, posEnd-posStart+1);
+                if(tag.Contains("/"+tagType)){
+                    if(depth == 0){
+                        return new section(html.Substring(sectionStart, posCurr-sectionStart));
+                    } else{
+                        depth -= 1;
+                    }
+                } else{
+                    depth += 1;
+                }
+            }
+        }
+    }
+
+    public class section{
+        public string source;
+        public string content;
+        public section(string source){
+            this.source = source;
+            this.content = source; //FIXME
         }
     }
 }

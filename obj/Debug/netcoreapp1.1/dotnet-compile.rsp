@@ -1,5 +1,5 @@
---temp-output:C:\Users\Jurin1388\Desktop\Program\dotnet\SharpParser\obj\Debug\netcoreapp1.1\
---out:C:\Users\Jurin1388\Desktop\Program\dotnet\SharpParser\bin\Debug\netcoreapp1.1\SharpParser.dll
+--temp-output:c:\Users\Jurin1388\Desktop\Program\dotnet\SharpParser\obj\Debug\netcoreapp1.1\
+--out:c:\Users\Jurin1388\Desktop\Program\dotnet\SharpParser\bin\Debug\netcoreapp1.1\SharpParser.dll
 --define:DEBUG
 --define:TRACE
 --define:NETCOREAPP1_1
@@ -87,4 +87,4 @@
 --reference:C:\Users\Jurin1388\.nuget\packages\System.Threading.Timer\4.3.0\ref\netstandard1.2\System.Threading.Timer.dll
 --reference:C:\Users\Jurin1388\.nuget\packages\System.Xml.ReaderWriter\4.3.0\ref\netstandard1.3\System.Xml.ReaderWriter.dll
 --reference:C:\Users\Jurin1388\.nuget\packages\System.Xml.XDocument\4.3.0\ref\netstandard1.3\System.Xml.XDocument.dll
-C:\Users\Jurin1388\Desktop\Program\dotnet\SharpParser\Program.cs
+c:\Users\Jurin1388\Desktop\Program\dotnet\SharpParser\Program.cs

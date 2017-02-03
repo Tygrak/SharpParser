@@ -9,8 +9,8 @@ namespace ConsoleApplication{
     public class Program{
         public static void Main(string[] args){
             page idnes = new SharpParser.page("http://gyrosmajales.wz.cz/test.php");
-            Console.WriteLine(idnes.findSectionByProperty("div", "id", "pes").source);
-            Console.WriteLine(idnes.findSectionByProperty("span", "class", "kocur").source);
+            Console.WriteLine(idnes.findSectionByProperty("div", "id", "pes").content);
+            Console.WriteLine(idnes.findSectionByProperty("span", "class", "kocur").content);
         }
     }
 }
@@ -25,6 +25,11 @@ namespace SharpParser{
             Task<string> loader = loadHTML(url);
             loader.Wait();
             this.html = loader.Result;
+        }
+
+        public page(string url, string html){
+            this.url = url;
+            this.html = html;
         }
 
         public async Task<string> loadHTML(string url){
@@ -110,6 +115,23 @@ namespace SharpParser{
                 }
             }
         }
+
+        public static string removeTags(string toClean){
+            int posCurr = 0;
+            while (true){
+                int posStart = toClean.IndexOf("<", posCurr);
+                if(posStart == -1){
+                    return toClean;
+                }
+                int posTest = toClean.IndexOf("<", posStart+1);
+                int posEnd = toClean.IndexOf(">", posStart);
+                if(posTest != -1 && posTest < posEnd){
+                    posCurr = posTest;
+                    continue;
+                }
+                toClean = toClean.Remove(posStart, posEnd-posStart+1);
+            }
+        }
     }
 
     public class section{
@@ -117,7 +139,7 @@ namespace SharpParser{
         public string content;
         public section(string source){
             this.source = source;
-            this.content = source; //FIXME
+            this.content = page.removeTags(source);
         }
     }
 }

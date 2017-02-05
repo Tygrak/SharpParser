@@ -11,7 +11,7 @@
             ],
             "isBuildCommand": true,
             "problemMatcher": "$msCompile"
-        }
+        },
         {
             "taskName": "run",
             "args": [

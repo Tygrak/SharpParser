@@ -8,14 +8,21 @@ using SharpParser;
 namespace ConsoleApplication{
     public class Program{
         public static void Main(string[] args){
-            page pag = new page("http://diktator.wz.cz");
-            //Console.WriteLine(pag.findSection("a").source);
-            section[] sections = pag.findAllSections("a");
+            //Example
+            page pag = new page("http://diktator.wz.cz/test.php");
+            Console.WriteLine(pag.content);
+            /*section[] sections = pag.findAllSections("a");
             for (int i = 0; i < sections.Length; i++){
                 //Console.WriteLine(sections[i].content);
                 Console.WriteLine(sections[i].content);
             }
-            Console.WriteLine(pag.findSectionByProperty("div", "class", "createGameText").source);
+            Console.WriteLine(pag.findSection("style").source);
+            Console.WriteLine(pag.findSectionByProperty("div", "class", "createGameText").source);*/
+            page utPage = new page("https://www.youtube.com/watch?v=L_jWHffIx5E");
+            section[] sections = utPage.findAllSectionsByProperty("div", "class", "watch-view-count");
+            for (int i = 0; i < sections.Length; i++){
+                Console.WriteLine("Smash Mouth - All Star: "+sections[i].content);
+            }
         }
     }
 }
@@ -24,12 +31,14 @@ namespace SharpParser{
     public class page{
         public string url;
         public string html;
+        public string content;
 
         public page(string url){
             this.url = url;
             Task<string> loader = loadHTML(url);
             loader.Wait();
             this.html = loader.Result;
+            this.content = removeTags(loader.Result);
         }
 
         public page(string url, string html){
@@ -140,7 +149,7 @@ namespace SharpParser{
                 string tag = html.Substring(posStart, posEnd-posStart+1);
                 if(tag.Contains("</"+tagType)){
                     if(depth == 0){
-                        return new section(html.Substring(sectionStart, posCurr-sectionStart));
+                        return new section(html.Substring(sectionStart, posCurr-sectionStart), posStart);
                     } else{
                         depth -= 1;
                     }
@@ -177,7 +186,7 @@ namespace SharpParser{
                     string tag = html.Substring(posStart, posEnd-posStart+1);
                     if(tag.Contains("</"+tagType)){
                         if(depth == 0){
-                            sections.Add(new section(html.Substring(sectionStart, posCurr-sectionStart)));
+                            sections.Add(new section(html.Substring(sectionStart, posCurr-sectionStart), posStart));
                             break;
                         } else{
                             depth -= 1;
@@ -301,7 +310,7 @@ namespace SharpParser{
                 string tag = html.Substring(posStart, posEnd-posStart+1);
                 if(tag.Contains("</"+tagType)){
                     if(depth == 0){
-                        return new section(html.Substring(sectionStart, posCurr-sectionStart));
+                        return new section(html.Substring(sectionStart, posCurr-sectionStart), posStart);
                     } else{
                         depth -= 1;
                     }
@@ -338,7 +347,7 @@ namespace SharpParser{
                     string tag = html.Substring(posStart, posEnd-posStart+1);
                     if(tag.Contains("</"+tagType)){
                         if(depth == 0){
-                            sections.Add(new section(html.Substring(sectionStart, posCurr-sectionStart)));
+                            sections.Add(new section(html.Substring(sectionStart, posCurr-sectionStart), posStart));
                             break;
                         } else{
                             depth -= 1;
@@ -360,7 +369,7 @@ namespace SharpParser{
             return toFix;
         }
 
-        public static string removeTags(string toClean){
+        public static string removeTags(string toClean, bool clearSpecial = false){
             int posCurr = 0;
             while (true){
                 int posStart = toClean.IndexOf("<", posCurr);
@@ -375,16 +384,19 @@ namespace SharpParser{
                 }
                 toClean = toClean.Remove(posStart, posEnd-posStart+1);
             }
+            //TODO: Ability to remove special content such as scripts or stylesheets 
         }
     }
 
     public class section{
         public string source;
         public string content;
+        public int tagPos;
 
-        public section(string source){
+        public section(string source, int tagPos = -1){
             this.source = source;
             this.content = page.removeTags(source);
+            this.tagPos = tagPos;
         }
 
         public string getProperty(string property){

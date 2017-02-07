@@ -11,6 +11,8 @@ namespace ConsoleApplication{
             //Example
             page pag = new page("http://diktator.wz.cz/test.php");
             Console.WriteLine(pag.content);
+            pag = new page("http://diktator.wz.cz");
+            Console.WriteLine(pag.content);
             /*section[] sections = pag.findAllSections("a");
             for (int i = 0; i < sections.Length; i++){
                 //Console.WriteLine(sections[i].content);
@@ -19,6 +21,7 @@ namespace ConsoleApplication{
             Console.WriteLine(pag.findSection("style").source);
             Console.WriteLine(pag.findSectionByProperty("div", "class", "createGameText").source);*/
             page utPage = new page("https://www.youtube.com/watch?v=L_jWHffIx5E");
+            //Console.WriteLine(utPage.content);
             section[] sections = utPage.findAllSectionsByProperty("div", "class", "watch-view-count");
             for (int i = 0; i < sections.Length; i++){
                 Console.WriteLine("Smash Mouth - All Star: "+sections[i].content);
@@ -38,7 +41,7 @@ namespace SharpParser{
             Task<string> loader = loadHTML(url);
             loader.Wait();
             this.html = loader.Result;
-            this.content = removeTags(loader.Result);
+            this.content = removeTags(loader.Result, true);
         }
 
         public page(string url, string html){
@@ -371,6 +374,33 @@ namespace SharpParser{
 
         public static string removeTags(string toClean, bool clearSpecial = false){
             int posCurr = 0;
+            if(clearSpecial){
+                while (true){
+                    int posStart = toClean.IndexOf("<style");
+                    if(posStart == -1){
+                        break;
+                    }
+                    int posEnd = toClean.IndexOf("</style", posStart);
+                    posEnd = toClean.IndexOf(">", posEnd);
+                    if(posEnd == -1){
+                        break;
+                    }
+                    toClean = toClean.Remove(posStart, posEnd-posStart+1);
+                }
+                while (true){
+                    int posStart = toClean.IndexOf("<script");
+                    if(posStart == -1){
+                        break;
+                    }
+                    int posEnd = toClean.IndexOf("</script", posStart);
+                    posEnd = toClean.IndexOf(">", posEnd);
+                    if(posEnd == -1){
+                        break;
+                    }
+                    toClean = toClean.Remove(posStart, posEnd-posStart+1);
+                }
+            }
+            posCurr = 0;
             while (true){
                 int posStart = toClean.IndexOf("<", posCurr);
                 if(posStart == -1){
@@ -384,7 +414,6 @@ namespace SharpParser{
                 }
                 toClean = toClean.Remove(posStart, posEnd-posStart+1);
             }
-            //TODO: Ability to remove special content such as scripts or stylesheets 
         }
     }
 

@@ -12,7 +12,15 @@ namespace ConsoleApplication{
             page pag = new page("http://diktator.wz.cz/test.php");
             Console.WriteLine(pag.content);
             pag = new page("http://diktator.wz.cz");
-            Console.WriteLine(pag.content);
+            //Console.WriteLine(pag.content);
+            string[] strings = pag.findAllTags("a");
+            for (int i = 0; i < strings.Length; i++){
+                Console.WriteLine(strings[i]);
+            }
+            strings = pag.findAllTagsByProperty("a","id","odpoved0");
+            for (int i = 0; i < strings.Length; i++){
+                Console.WriteLine(strings[i]);
+            }
             /*section[] sections = pag.findAllSections("a");
             for (int i = 0; i < sections.Length; i++){
                 //Console.WriteLine(sections[i].content);
@@ -47,6 +55,7 @@ namespace SharpParser{
         public page(string url, string html){
             this.url = url;
             this.html = html;
+            this.content = removeTags(html, true);
         }
 
         public async Task<string> loadHTML(string url){
@@ -58,7 +67,8 @@ namespace SharpParser{
             }
         }
 
-        public string findTag(string tagType, int numberToFind = 0){
+        public string findTag(string tagType, int offset = 0){
+            //Finds nth tag where n is offset
             int posCurr = 0;
             int found = 0;
             string tagFinder = getTagFinder(tagType);
@@ -75,14 +85,41 @@ namespace SharpParser{
                     posCurr = posTag+1;
                     continue;
                 }
-                if(numberToFind == found){
+                if(offset == found){
                     return tag;
                 }
                 found += 1;
             }
         }
 
-        public int findTagPosition(string tagType, int numberToFind = 0){
+        public string[] findAllTags(string tagType, int numberToFind = -1){
+            List<string> tags = new List<string>();
+            int posCurr = 0;
+            int found = 0;
+            string tagFinder = getTagFinder(tagType);
+            while (true){
+                int posTag = html.IndexOf(tagFinder, posCurr);
+                if(posTag == -1){
+                    break;
+                }
+                int posStart = html.LastIndexOf("<", posTag);
+                int posEnd = html.IndexOf(">", posStart);
+                posCurr = posEnd+1;
+                string tag = html.Substring(posStart, posEnd-posStart+1);
+                if(tag.Contains("/"+tagType) || !tag.Contains(tagType)){
+                    posCurr = posTag+1;
+                    continue;
+                }
+                tags.Add(tag);
+                found += 1;
+                if(numberToFind == found){
+                    break;
+                }
+            }
+            return tags.ToArray();
+        }
+
+        public int findTagPosition(string tagType, int offset = 0){
             //Returns position of the "<" of the tag.
             string tagFinder = getTagFinder(tagType);
             int posCurr = 0;
@@ -100,7 +137,7 @@ namespace SharpParser{
                     posCurr = posTag+1;
                     continue;
                 }
-                if(numberToFind == found){
+                if(offset == found){
                     return posStart;
                 }
                 found += 1;
@@ -131,8 +168,8 @@ namespace SharpParser{
             return positions.ToArray();
         }
 
-        public section findSection(string tagType, int numberToFind = 0){
-            int posCurr = findTagPosition(tagType, numberToFind);
+        public section findSection(string tagType, int offset = 0){
+            int posCurr = findTagPosition(tagType, offset);
             string tagFinder = getTagFinder(tagType);
             int sectionStart = posCurr;
             posCurr = html.IndexOf(">", posCurr);
@@ -208,6 +245,7 @@ namespace SharpParser{
         public string findTagByProperty(string tagType, string property, string propertyValue){
             int posCurr = 0;
             string tagFinder = getTagFinder(tagType);
+            property = property.Insert(0," ");
             while (true){
                 int posTag = html.IndexOf(tagFinder, posCurr);
                 if(posTag == -1){
@@ -234,9 +272,47 @@ namespace SharpParser{
             }
         }
 
+        public string[] findAllTagsByProperty(string tagType, string property, string propertyValue, int numberToFind = -1){
+            List<string> tags = new List<string>();
+            int posCurr = 0;
+            int found = 0;
+            property = property.Insert(0," ");
+            string tagFinder = getTagFinder(tagType);
+            while (true){
+                int posTag = html.IndexOf(tagFinder, posCurr);
+                if(posTag == -1){
+                    break;
+                }
+                int posStart = html.LastIndexOf("<", posTag);
+                int posEnd = html.IndexOf(">", posStart);
+                posCurr = posEnd+1;
+                string tag = html.Substring(posStart, posEnd-posStart+1);
+                posStart = tag.IndexOf(property);
+                if(posStart == -1){
+                    continue;
+                }
+                if(tag.Contains("/"+tagType) || !tag.Contains(tagType)){
+                    posCurr = posTag+1;
+                    continue;
+                }
+                posStart = tag.IndexOf("\"",posStart);
+                posEnd = tag.IndexOf("\"",posStart+1);
+                string content = tag.Substring(posStart+1, posEnd-posStart-1); 
+                if(propertyValue == content){
+                    tags.Add(tag);
+                    found += 1;
+                }
+                if(numberToFind == found){
+                    break;
+                }
+            }
+            return tags.ToArray();
+        }
+
         public int findTagPositionByProperty(string tagType, string property, string propertyValue){
             int posCurr = 0;
             string tagFinder = getTagFinder(tagType);
+            property = property.Insert(0," ");
             while (true){
                 int posTag = html.IndexOf(tagFinder, posCurr);
                 if(posTag == -1){
@@ -264,6 +340,7 @@ namespace SharpParser{
         public int[] findAllTagPositionsByProperty(string tagType, string property, string propertyValue){
             List<int> positions = new List<int>();
             string tagFinder = getTagFinder(tagType);
+            property = property.Insert(0," ");
             int posCurr = 0;
             int posFound = 0;
             while (true){
@@ -296,6 +373,7 @@ namespace SharpParser{
             int posCurr = findTagPositionByProperty(tagType, property, propertyValue);
             string tagFinder = getTagFinder(tagType);
             int sectionStart = posCurr;
+            property = property.Insert(0," ");
             posCurr = html.IndexOf(">", posCurr);
             int depth = 0;
             while (true){
@@ -330,6 +408,7 @@ namespace SharpParser{
             List<section> sections = new List<section>();
             string tagFinder = getTagFinder(tagType);
             int[] positions = findAllTagPositionsByProperty(tagType, property, propertyValue);
+            property = property.Insert(0," ");
             for (int i = 0; i < positions.Length; i++){
                 int posCurr = positions[i];
                 int sectionStart = posCurr;

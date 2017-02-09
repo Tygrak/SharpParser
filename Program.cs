@@ -10,16 +10,16 @@ namespace ConsoleApplication{
         public static void Main(string[] args){
             //Example
             page pag = new page("http://diktator.wz.cz/test.php");
-            Console.WriteLine(pag.content);
+            //Console.WriteLine(pag.content);
             pag = new page("http://diktator.wz.cz");
             //Console.WriteLine(pag.content);
-            string[] strings = pag.findAllTags("a");
-            for (int i = 0; i < strings.Length; i++){
-                Console.WriteLine(strings[i]);
+            tag[] tags = pag.findAllTags("a");
+            for (int i = 0; i < tags.Length; i++){
+                Console.WriteLine(tags[i].getProperty("href"));
             }
-            strings = pag.findAllTagsByProperty("a","id","odpoved0");
-            for (int i = 0; i < strings.Length; i++){
-                Console.WriteLine(strings[i]);
+            tags = pag.findAllTagsByProperty("a","id","odpoved0");
+            for (int i = 0; i < tags.Length; i++){
+                Console.WriteLine(tags[i].source);
             }
             /*section[] sections = pag.findAllSections("a");
             for (int i = 0; i < sections.Length; i++){
@@ -67,7 +67,7 @@ namespace SharpParser{
             }
         }
 
-        public string findTag(string tagType, int offset = 0){
+        public tag findTag(string tagType, int offset = 0){
             //Finds nth tag where n is offset
             int posCurr = 0;
             int found = 0;
@@ -80,20 +80,20 @@ namespace SharpParser{
                 int posStart = html.LastIndexOf("<", posTag);
                 int posEnd = html.IndexOf(">", posStart);
                 posCurr = posEnd+1;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                if(tag.Contains("/"+tagType) || !tag.Contains(tagType)){
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                if(tagString.Contains("/"+tagType) || !tagString.Contains(tagType)){
                     posCurr = posTag+1;
                     continue;
                 }
                 if(offset == found){
-                    return tag;
+                    return new tag(tagString, posStart);
                 }
                 found += 1;
             }
         }
 
-        public string[] findAllTags(string tagType, int numberToFind = -1){
-            List<string> tags = new List<string>();
+        public tag[] findAllTags(string tagType, int numberToFind = -1){
+            List<tag> tags = new List<tag>();
             int posCurr = 0;
             int found = 0;
             string tagFinder = getTagFinder(tagType);
@@ -105,12 +105,12 @@ namespace SharpParser{
                 int posStart = html.LastIndexOf("<", posTag);
                 int posEnd = html.IndexOf(">", posStart);
                 posCurr = posEnd+1;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                if(tag.Contains("/"+tagType) || !tag.Contains(tagType)){
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                if(tagString.Contains("/"+tagType) || !tagString.Contains(tagType)){
                     posCurr = posTag+1;
                     continue;
                 }
-                tags.Add(tag);
+                tags.Add(new tag(tagString, posStart));
                 found += 1;
                 if(numberToFind == found){
                     break;
@@ -132,8 +132,8 @@ namespace SharpParser{
                 int posStart = html.LastIndexOf("<", posTag);
                 int posEnd = html.IndexOf(">", posStart);
                 posCurr = posEnd+1;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                if(tag.Contains("/"+tagType) || !tag.Contains(tagType) || posStart == -1){
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                if(tagString.Contains("/"+tagType) || !tagString.Contains(tagType) || posStart == -1){
                     posCurr = posTag+1;
                     continue;
                 }
@@ -157,8 +157,8 @@ namespace SharpParser{
                 int posStart = html.LastIndexOf("<", posTag);
                 int posEnd = html.IndexOf(">", posStart);
                 posCurr = posEnd+1;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                if(tag.Contains("/"+tagType) || !tag.Contains(tagType) || posStart == -1){
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                if(tagString.Contains("/"+tagType) || !tagString.Contains(tagType) || posStart == -1){
                     posCurr = posTag+1;
                     continue;
                 }
@@ -186,14 +186,14 @@ namespace SharpParser{
                         continue;
                 }
                 posCurr = posEnd+1;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                if(tag.Contains("</"+tagType)){
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                if(tagString.Contains("</"+tagType)){
                     if(depth == 0){
                         return new section(html.Substring(sectionStart, posCurr-sectionStart), posStart);
                     } else{
                         depth -= 1;
                     }
-                } else if(tag.Contains(tagFinder)){
+                } else if(tagString.Contains(tagFinder)){
                     depth += 1;
                 } else{
                     posCurr = posTag+1;
@@ -223,15 +223,15 @@ namespace SharpParser{
                         continue;
                     }
                     posCurr = posEnd+1;
-                    string tag = html.Substring(posStart, posEnd-posStart+1);
-                    if(tag.Contains("</"+tagType)){
+                    string tagString = html.Substring(posStart, posEnd-posStart+1);
+                    if(tagString.Contains("</"+tagType)){
                         if(depth == 0){
                             sections.Add(new section(html.Substring(sectionStart, posCurr-sectionStart), posStart));
                             break;
                         } else{
                             depth -= 1;
                         }
-                    } else if(tag.Contains(tagFinder)){
+                    } else if(tagString.Contains(tagFinder)){
                         depth += 1;
                     } else{
                         posCurr = posTag+1;
@@ -242,7 +242,7 @@ namespace SharpParser{
             return sections.ToArray();
         }
 
-        public string findTagByProperty(string tagType, string property, string propertyValue){
+        public tag findTagByProperty(string tagType, string property, string propertyValue){
             int posCurr = 0;
             string tagFinder = getTagFinder(tagType);
             property = property.Insert(0," ");
@@ -254,26 +254,26 @@ namespace SharpParser{
                 int posStart = html.LastIndexOf("<", posTag);
                 int posEnd = html.IndexOf(">", posStart);
                 posCurr = posEnd+1;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                posStart = tag.IndexOf(property);
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                posStart = tagString.IndexOf(property);
                 if(posStart == -1){
                     continue;
                 }
-                if(tag.Contains("/"+tagType) || !tag.Contains(tagType)){
+                if(tagString.Contains("/"+tagType) || !tagString.Contains(tagType)){
                     posCurr = posTag+1;
                     continue;
                 }
-                posStart = tag.IndexOf("\"",posStart);
-                posEnd = tag.IndexOf("\"",posStart+1);
-                string content = tag.Substring(posStart+1, posEnd-posStart-1); 
+                posStart = tagString.IndexOf("\"",posStart);
+                posEnd = tagString.IndexOf("\"",posStart+1);
+                string content = tagString.Substring(posStart+1, posEnd-posStart-1); 
                 if(propertyValue == content){
-                    return tag;
+                    return new tag(tagString, posStart);
                 }
             }
         }
 
-        public string[] findAllTagsByProperty(string tagType, string property, string propertyValue, int numberToFind = -1){
-            List<string> tags = new List<string>();
+        public tag[] findAllTagsByProperty(string tagType, string property, string propertyValue, int numberToFind = -1){
+            List<tag> tags = new List<tag>();
             int posCurr = 0;
             int found = 0;
             property = property.Insert(0," ");
@@ -286,20 +286,20 @@ namespace SharpParser{
                 int posStart = html.LastIndexOf("<", posTag);
                 int posEnd = html.IndexOf(">", posStart);
                 posCurr = posEnd+1;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                posStart = tag.IndexOf(property);
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                posStart = tagString.IndexOf(property);
                 if(posStart == -1){
                     continue;
                 }
-                if(tag.Contains("/"+tagType) || !tag.Contains(tagType)){
+                if(tagString.Contains("/"+tagType) || !tagString.Contains(tagType)){
                     posCurr = posTag+1;
                     continue;
                 }
-                posStart = tag.IndexOf("\"",posStart);
-                posEnd = tag.IndexOf("\"",posStart+1);
-                string content = tag.Substring(posStart+1, posEnd-posStart-1); 
+                posStart = tagString.IndexOf("\"",posStart);
+                posEnd = tagString.IndexOf("\"",posStart+1);
+                string content = tagString.Substring(posStart+1, posEnd-posStart-1); 
                 if(propertyValue == content){
-                    tags.Add(tag);
+                    tags.Add(new tag(tagString, posStart));
                     found += 1;
                 }
                 if(numberToFind == found){
@@ -321,15 +321,15 @@ namespace SharpParser{
                 int posStart = html.LastIndexOf("<", posTag);
                 int posEnd = html.IndexOf(">", posStart);
                 posCurr = posStart;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                posStart = tag.IndexOf(property);
-                if(tag.Contains("/"+tagType) || !tag.Contains(tagType) || posStart == -1){
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                posStart = tagString.IndexOf(property);
+                if(tagString.Contains("/"+tagType) || !tagString.Contains(tagType) || posStart == -1){
                     posCurr = posTag+1;
                     continue;
                 }
-                posStart = tag.IndexOf("\"",posStart);
-                posEnd = tag.IndexOf("\"",posStart+1);
-                string content = tag.Substring(posStart+1, posEnd-posStart-1);
+                posStart = tagString.IndexOf("\"",posStart);
+                posEnd = tagString.IndexOf("\"",posStart+1);
+                string content = tagString.Substring(posStart+1, posEnd-posStart-1);
                 if(propertyValue == content){
                     return posCurr;
                 }
@@ -352,15 +352,15 @@ namespace SharpParser{
                 int posEnd = html.IndexOf(">", posStart);
                 posCurr = posEnd;
                 posFound = posStart;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                posStart = tag.IndexOf(property);
-                if(tag.Contains("/"+tagType) || !tag.Contains(tagType) || posStart == -1){
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                posStart = tagString.IndexOf(property);
+                if(tagString.Contains("/"+tagType) || !tagString.Contains(tagType) || posStart == -1){
                     posCurr = posTag+1;
                     continue;
                 }
-                posStart = tag.IndexOf("\"",posStart);
-                posEnd = tag.IndexOf("\"",posStart+1);
-                string content = tag.Substring(posStart+1, posEnd-posStart-1);
+                posStart = tagString.IndexOf("\"",posStart);
+                posEnd = tagString.IndexOf("\"",posStart+1);
+                string content = tagString.Substring(posStart+1, posEnd-posStart-1);
                 if(propertyValue == content){
                     positions.Add(posFound);
                 }
@@ -388,14 +388,14 @@ namespace SharpParser{
                         continue;
                 }
                 posCurr = posEnd+1;
-                string tag = html.Substring(posStart, posEnd-posStart+1);
-                if(tag.Contains("</"+tagType)){
+                string tagString = html.Substring(posStart, posEnd-posStart+1);
+                if(tagString.Contains("</"+tagType)){
                     if(depth == 0){
                         return new section(html.Substring(sectionStart, posCurr-sectionStart), posStart);
                     } else{
                         depth -= 1;
                     }
-                } else if(tag.Contains(tagFinder)){
+                } else if(tagString.Contains(tagFinder)){
                     depth += 1;
                 } else{
                     posCurr = posTag+1;
@@ -426,15 +426,15 @@ namespace SharpParser{
                         continue;
                     }
                     posCurr = posEnd+1;
-                    string tag = html.Substring(posStart, posEnd-posStart+1);
-                    if(tag.Contains("</"+tagType)){
+                    string tagString = html.Substring(posStart, posEnd-posStart+1);
+                    if(tagString.Contains("</"+tagType)){
                         if(depth == 0){
                             sections.Add(new section(html.Substring(sectionStart, posCurr-sectionStart), posStart));
                             break;
                         } else{
                             depth -= 1;
                         }
-                    } else if(tag.Contains(tagFinder)){
+                    } else if(tagString.Contains(tagFinder)){
                         depth += 1;
                     } else{
                         posCurr = posTag+1;
@@ -508,6 +508,7 @@ namespace SharpParser{
         }
 
         public string getProperty(string property){
+            property = property.Insert(0," ");
             int posStart = source.IndexOf(property);
             int posEnd = source.IndexOf(">");
             if(posStart == -1 || posEnd<posStart){
@@ -515,6 +516,28 @@ namespace SharpParser{
             }
             posStart = source.IndexOf("\"",posStart);
             posEnd = source.IndexOf("\"",posStart+1);
+            string content = source.Substring(posStart+1, posEnd-posStart-1); 
+            return content;
+        }
+    }
+
+    public class tag{
+        public string source;
+        public int tagPos;
+
+        public tag(string source, int tagPos = -1){
+            this.source = source;
+            this.tagPos = tagPos;
+        }
+
+        public string getProperty(string property){
+            property = property.Insert(0," ");
+            int posStart = source.IndexOf(property);
+            if(posStart == -1){
+                return null;
+            }
+            posStart = source.IndexOf("\"",posStart);
+            int posEnd = source.IndexOf("\"",posStart+1);
             string content = source.Substring(posStart+1, posEnd-posStart-1); 
             return content;
         }

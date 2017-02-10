@@ -14,6 +14,19 @@ namespace ConsoleApplication{
             for (int i = 0; i < sections.Length; i++){
                 Console.WriteLine(sections[i].content);
             }
+            section ha = pag.findSectionByProperty("div", "class", "ha");
+            Console.WriteLine(ha.content);
+            Console.WriteLine(ha.tagPos);
+            section pes = pag.findSectionParent(ha.tagPos);
+            Console.WriteLine(pes.content);
+            Console.WriteLine(pes.tagPos);
+            Console.WriteLine(pag.findSectionChild(pes.tagPos).content);
+            section teaspot = pag.findSectionByContent("ice cream");
+            Console.WriteLine(teaspot.content);
+            sections = pag.findAllSectionChildren(teaspot.tagPos);
+            for (int i = 0; i < sections.Length; i++){
+                Console.WriteLine(sections[i].content);
+            }
             //Console.WriteLine(pag.content);
             pag = new page("http://diktator.wz.cz");
             //Console.WriteLine(pag.content);
@@ -32,8 +45,8 @@ namespace ConsoleApplication{
             }
             Console.WriteLine(pag.findSection("style").source);
             Console.WriteLine(pag.findSectionByProperty("div", "class", "createGameText").source);*/
-            page utPage = new page("https://www.youtube.com/watch?v=L_jWHffIx5E");
-            Console.WriteLine("Smash Mouth - All Star: "+utPage.findSectionByContent("zhlédnutí").content);
+            //page utPage = new page("https://www.youtube.com/watch?v=L_jWHffIx5E");
+            //Console.WriteLine("Smash Mouth - All Star: "+utPage.findSectionByContent("zhlédnutí").content);
         }
     }
 }
@@ -367,6 +380,120 @@ namespace SharpParser{
                 posCurr = posTag+1;
             }
             return positions.ToArray();
+        }
+        
+        public section findSectionParent(int position){
+            position -= 1;
+            int sectionStart, sectionEnd, posTest;
+            while(true){
+                sectionStart = html.LastIndexOf("<", position);
+                posTest = html.IndexOf(">", sectionStart);
+                if(sectionStart == -1 || posTest == -1){
+                    return null;
+                }
+                if(posTest>position){
+                    continue;
+                }
+                break;
+            }
+            string tagType = html.Substring(sectionStart,2);
+            string tagEnd = tagType.Insert(1,"/");
+            sectionEnd = html.IndexOf(tagEnd, sectionStart)-2;
+            posTest = sectionEnd;
+            while(true){
+                sectionEnd = html.IndexOf(tagEnd, sectionEnd+1);
+                posTest = html.LastIndexOf(tagType, posTest-1);
+                if(sectionEnd == -1 || posTest == -1){
+                    return null;
+                }
+                if(posTest>sectionStart){
+                    continue;
+                }
+                break;
+            }
+            sectionEnd = html.IndexOf(">", sectionEnd);
+            return new section(html.Substring(sectionStart, sectionEnd-sectionStart+1), sectionStart);
+        }
+
+        public section findSectionChild(int position){
+            int sectionStart, sectionEnd, posTest;
+            while(true){
+                sectionStart = html.IndexOf("<", position+1);
+                posTest = html.IndexOf("<", sectionStart+1);
+                int posTest2 = html.IndexOf(">", sectionStart);
+                if(sectionStart == -1 || posTest2 == -1){
+                    return null;
+                }
+                if(posTest<posTest2){
+                    continue;
+                }
+                break;
+            }
+            string tagType = html.Substring(sectionStart,2);
+            string tagEnd = tagType.Insert(1,"/");
+            sectionEnd = html.IndexOf(tagEnd, sectionStart)-2;
+            posTest = sectionEnd;
+            while(true){
+                sectionEnd = html.IndexOf(tagEnd, sectionEnd+1);
+                posTest = html.LastIndexOf(tagType, posTest-1);
+                if(sectionEnd == -1 || posTest == -1){
+                    return null;
+                }
+                if(posTest>sectionStart){
+                    continue;
+                }
+                break;
+            }
+            sectionEnd = html.IndexOf(">", sectionEnd);
+            return new section(html.Substring(sectionStart, sectionEnd-sectionStart+1), sectionStart);
+        }
+
+        public section[] findAllSectionChildren(int position){
+            List<section> sections = new List<section>();
+            int posCurr = position;
+            while(true){
+                int sectionStart, sectionEnd, posTest, posTest2;
+                while(true){
+                    sectionStart = html.IndexOf("<", posCurr+1);
+                    posTest = html.IndexOf("<", sectionStart+1);
+                    posTest2 = html.IndexOf(">", sectionStart);
+                    if(sectionStart == -1 || posTest2 == -1){
+                        break;
+                    }
+                    if(posTest<posTest2){
+                        continue;
+                    }
+                    break;
+                }
+                if(sectionStart == -1 || posTest2 == -1){
+                    break;
+                }
+                string tagType = html.Substring(sectionStart,2);
+                if(tagType == "</"){
+                    break;
+                }
+                string tagEnd = tagType.Insert(1,"/");
+                sectionEnd = html.IndexOf(tagEnd, sectionStart)-2;
+                posTest = sectionEnd;
+                while(true){
+                    sectionEnd = html.IndexOf(tagEnd, sectionEnd+1);
+                    posTest = html.LastIndexOf(tagType, posTest-1);
+                    if(sectionEnd == -1 || posTest == -1){
+                        break;
+                    }
+                    if(posTest>sectionStart){
+                        continue;
+                    }
+                    break;
+                }
+                if(sectionEnd == -1 || posTest == -1){
+                    break;
+                }
+                sectionEnd = html.IndexOf(">", sectionEnd);
+                sections.Add(new section(html.Substring(sectionStart, sectionEnd-sectionStart+1), sectionStart));
+                posCurr = sectionEnd;
+            }
+            return sections.ToArray();
         }
 
         public section findSectionByContent(string content){

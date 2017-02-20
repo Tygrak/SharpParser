@@ -10,7 +10,8 @@ namespace ConsoleApplication{
         public static void Main(string[] args){
             //Example
             page pag = new page("http://diktator.wz.cz/test.php");
-            section[] sections = pag.findAllSectionsByContent("je");
+            Console.WriteLine(page.readablePage(pag.content));
+            /*section[] sections = pag.findAllSectionsByContent("je");
             for (int i = 0; i < sections.Length; i++){
                 Console.WriteLine(sections[i].content);
             }
@@ -27,7 +28,9 @@ namespace ConsoleApplication{
             for (int i = 0; i < sections.Length; i++){
                 Console.WriteLine(sections[i].content);
             }
-            //Console.WriteLine(pag.content);
+            section tea = sections[1];
+            tea = pag.findSectionParent(tea.tagPos);*/ //TODO: Fix findSectionParent
+            /*
             pag = new page("http://diktator.wz.cz");
             //Console.WriteLine(pag.content);
             tag[] tags = pag.findAllTags("a");
@@ -37,7 +40,7 @@ namespace ConsoleApplication{
             tags = pag.findAllTagsByProperty("a","id","odpoved0");
             for (int i = 0; i < tags.Length; i++){
                 Console.WriteLine(tags[i].source);
-            }
+            }*/
             /*section[] sections = pag.findAllSections("a");
             for (int i = 0; i < sections.Length; i++){
                 //Console.WriteLine(sections[i].content);
@@ -46,6 +49,9 @@ namespace ConsoleApplication{
             Console.WriteLine(pag.findSection("style").source);
             Console.WriteLine(pag.findSectionByProperty("div", "class", "createGameText").source);*/
             //page utPage = new page("https://www.youtube.com/watch?v=L_jWHffIx5E");
+            //Console.WriteLine(page.readablePage(utPage.content));
+            page wiki = new page("https://en.wikipedia.org/wiki/Czech_Republic");
+            Console.WriteLine(page.readablePage(wiki.content));
             //Console.WriteLine("Smash Mouth - All Star: "+utPage.findSectionByContent("zhlédnutí").content);
         }
     }
@@ -707,6 +713,17 @@ namespace SharpParser{
                 }
                 toClean = toClean.Remove(posStart, posEnd-posStart+1);
             }
+        }
+
+        public static string readablePage(string toClean){
+            toClean = page.removeTags(toClean, true); 
+            string[] lines = toClean.Split(new string[]{"\n"}, StringSplitOptions.None);
+            for (int i = 0; i < lines.Length; i++){
+                string line = lines[i];
+                line = line.Trim();
+                lines[i] = line;
+            }
+            return string.Join("\n", lines);
         }
     }
 
